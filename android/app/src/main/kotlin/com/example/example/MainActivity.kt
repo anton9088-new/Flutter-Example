@@ -1,4 +1,4 @@
-package com.anton9088.flutter_example
+package com.example.example
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity

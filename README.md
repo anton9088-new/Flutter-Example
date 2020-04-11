@@ -1,7 +1,7 @@
 ## Flutter Example
 
 This is an example project with following features:
-- Bloc Pattern
+- State Management by Provider + ValueNotifier
 - REST API to load images
 - Gallery and Single photo screens
 - Pagination, Error handling

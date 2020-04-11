@@ -1,12 +1,12 @@
-import 'package:flutter_example/model/GiphyImageInfo.dart';
-import 'package:flutter_example/views/ImageView.dart';
+import 'package:example/api/model.dart';
+import 'package:example/views/ImageView.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
-class SingleImageScreen extends StatelessWidget {
+class SingleImagePage extends StatelessWidget {
   final GiphyImageInfo image;
 
-  SingleImageScreen({this.image});
+  SingleImagePage({@required this.image});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +28,7 @@ class SingleImageScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16.0,
                 fontWeight: FontWeight.bold
-              ),
+              )
             )
           )
         ]

@@ -3,12 +3,9 @@ import 'package:flutter/widgets.dart';
 
 class Button extends StatelessWidget {
   final String text;
-  final Function() onPressed;
+  final VoidCallback onPressed;
 
-  Button({
-    @required this.text,
-    @required this.onPressed
-  });
+  Button({@required this.text, @required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +13,7 @@ class Button extends StatelessWidget {
       color: Colors.blueAccent,
       onPressed: onPressed,
       child: Text(
-        text,
+        text, 
         style: TextStyle(fontSize: 18.0, color: Colors.white)
       )
     );

@@ -1,84 +1,60 @@
-import 'package:flutter_example/navigation/NavigatorBloc.dart';
-import 'package:flutter_example/navigation/events.dart';
-import 'package:flutter_example/screens/gallery/GalleryBloc.dart';
-import 'package:flutter_example/screens/gallery/GalleryView.dart';
-import 'package:flutter_example/OperationStatus.dart';
-import 'package:flutter_example/screens/gallery/events.dart';
-import 'package:flutter_example/screens/gallery/GalleryState.dart';
-import 'package:flutter_example/views/ErrorPage.dart';
-import 'package:flutter_example/views/ProgressPage.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:example/OperationStatus.dart';
+import 'package:example/api/api.dart';
+import 'package:example/screens/gallery/GalleryModel.dart';
+import 'package:example/screens/gallery/GalleryView.dart';
+import 'package:example/views/CenteredProgress.dart';
+import 'package:example/views/EmptyView.dart';
+import 'package:example/views/ErrorPage.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:provider/provider.dart';
 
 class GalleryPage extends StatefulWidget {
   @override
-  State createState() => GalleryPageState();
+  _GalleryPage createState() => _GalleryPage();
 }
 
-class GalleryPageState extends State<GalleryPage> {
-
-  final refreshController = RefreshController();
-
-  GalleryBloc bloc;
-  NavigatorBloc navigatorBloc;
+class _GalleryPage extends State<GalleryPage> {
+  GalleryModel model;
 
   @override
   void initState() {
     super.initState();
-    bloc = BlocProvider.of<GalleryBloc>(context);
-    navigatorBloc = BlocProvider.of<NavigatorBloc>(context);
+
+    final api = Provider.of<GiphyApi>(context, listen: false);
+
+    model = GalleryModel(api: api);
+    model.loadImages();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<GalleryBloc, GalleryState>(
-      listener: (context, state) {
-        if (state.refreshStatus == OperationStatus.ERROR || state.loadMoreStatus == OperationStatus.ERROR) {
-          Fluttertoast.showToast(msg: 'Ошибка загрузки данных');
-        }
-      },
-      child: BlocBuilder<GalleryBloc, GalleryState>(
-        builder: (context, state) {
-          if (state.refreshStatus == OperationStatus.LOADING) {
-            refreshController.headerMode.value = RefreshStatus.refreshing;
-          } else if (state.refreshStatus == OperationStatus.ERROR) {
-            refreshController.headerMode.value = RefreshStatus.failed;
-          } else {
-            refreshController.headerMode.value = RefreshStatus.idle;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Giphy Application')
+      ),
+      body: Provider<GalleryModel>.value(
+        value: model,
+        child: ValueListenableBuilder<OperationStatus>(
+          valueListenable: model.loadStatus,
+          builder: (_, loadStatus, __) {
+            switch(loadStatus) {
+              case OperationStatus.LOADING:
+                return CenteredProgress();
+              case OperationStatus.COMPLETE:
+                return GalleryView();
+              case OperationStatus.ERROR:
+                return ErrorPage(
+                  errorText: 'Произошла ошибка',
+                  onRetryClicked: () {
+                    model.loadImages();
+                  }
+                );
+              default:
+                return EmptyView();
+            }
           }
-
-          if (state.loadMoreStatus == OperationStatus.LOADING) {
-            refreshController.footerMode.value = LoadStatus.loading;
-          } else if (state.loadMoreStatus == OperationStatus.ERROR) {
-            refreshController.footerMode.value = LoadStatus.failed;
-          } else {
-            refreshController.footerMode.value = LoadStatus.idle;
-          }
-
-          if (state.loadStatus == OperationStatus.LOADING) {
-            return ProgressPage();
-          } else if (state.loadStatus == OperationStatus.ERROR) {
-            return ErrorPage(
-              errorText: 'Ошибка загрузки данных',
-              onRetryClicked: () {
-                bloc.add(LoadInitial());
-              }
-            );
-          }
-
-          return GalleryView(
-            images: state.images,
-            onImageClicked: (image) {
-              navigatorBloc.add(NavigateToImageScreen(image));
-            },
-            onRefresh: () { bloc.add(Refresh()); },
-            onLoadMore: () { bloc.add(LoadMore()); },
-            refreshController: refreshController
-          );
-        }
+        )
       )
     );
   }

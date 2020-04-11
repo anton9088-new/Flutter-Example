@@ -1,51 +1,104 @@
-import 'package:flutter_example/model/GiphyImageInfo.dart';
-import 'package:flutter_example/views/Button.dart';
-import 'package:flutter_example/views/EmptyView.dart';
-import 'package:flutter_example/views/ImageView.dart';
+import 'package:example/OperationStatus.dart';
+import 'package:example/api/model.dart';
+import 'package:example/screens/gallery/GalleryModel.dart';
+import 'package:example/screens/single/SingleImagePage.dart';
+import 'package:example/views/Button.dart';
+import 'package:example/views/EmptyView.dart';
+import 'package:example/views/ImageView.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-class GalleryView extends StatelessWidget {
+class GalleryView extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() => _GalleryViewState();
+}
 
-  final double spacing = 10;
-  final int columns = 2;
+class _GalleryViewState extends State<GalleryView> {
+  static const double spacing = 10;
+  static const int columns = 2;
 
-  final List<GiphyImageInfo> images;
-  final Function(GiphyImageInfo) onImageClicked;
-  final Function() onRefresh;
-  final Function() onLoadMore;
-  final RefreshController refreshController;
+  final refreshController = RefreshController();
+  GalleryModel model;
 
-  GalleryView({
-    @required this.images,
-    @required this.onImageClicked,
-    @required this.onRefresh,
-    @required this.onLoadMore,
-    @required this.refreshController
-  });
+  @override
+  void initState() {
+    super.initState();
+
+    model = Provider.of<GalleryModel>(context, listen: false);
+    model.refreshStatus.addListener(onRefreshStatusChanged);
+    model.loadMoreStatus.addListener(onLoadMoreStatusChanged);
+  }
+
+  @override
+  void dispose() {
+    model.refreshStatus.removeListener(onRefreshStatusChanged);
+    model.loadMoreStatus.removeListener(onLoadMoreStatusChanged);
+
+    super.dispose();
+  }
+
+  void onRefreshStatusChanged() {
+    switch(model.refreshStatus.value) {
+      case OperationStatus.LOADING:
+        refreshController.headerMode.value = RefreshStatus.refreshing;
+        break;
+      case OperationStatus.COMPLETE:
+      case OperationStatus.IDLE:
+        refreshController.headerMode.value = RefreshStatus.idle;
+        break;
+      case OperationStatus.ERROR:
+        refreshController.headerMode.value = RefreshStatus.idle;
+        Fluttertoast.showToast(msg: 'Ошибка загрузки данных');
+        break;
+    }
+  }
+
+  void onLoadMoreStatusChanged() {
+    switch(model.loadMoreStatus.value) {
+      case OperationStatus.LOADING:
+        refreshController.footerMode.value = LoadStatus.loading;
+        break;
+      case OperationStatus.COMPLETE:
+      case OperationStatus.IDLE:
+        refreshController.footerMode.value = LoadStatus.idle;
+        break;
+      case OperationStatus.ERROR:
+        refreshController.footerMode.value = LoadStatus.failed;
+        Fluttertoast.showToast(msg: 'Ошибка загрузки данных');
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scrollbar(
-      child: SmartRefresher(
-        enablePullDown: images.isNotEmpty,
-        enablePullUp: images.isNotEmpty,
-        controller: refreshController,
-        onRefresh: onRefresh,
-        onLoading: onLoadMore,
-        header: MaterialClassicHeader(),
-        footer: createLoadingFooter(),
-        child: StaggeredGridView.countBuilder(
-          itemCount: images.length,
-          crossAxisCount: columns,
-          padding: EdgeInsets.all(spacing),
-          mainAxisSpacing: spacing,
-          crossAxisSpacing: spacing,
-          itemBuilder: (context, index) => createItemView(context, index),
-          staggeredTileBuilder: (index) => createTile(context, index),
-        )
+      child: ValueListenableBuilder<List<GiphyImageInfo>>(
+        valueListenable: model.images,
+        builder: (_, images, __) {
+          return SmartRefresher(
+            enablePullDown: images.isNotEmpty,
+            enablePullUp: images.isNotEmpty,
+            controller: refreshController,
+            onRefresh: () { model.refreshImages(); },
+            onLoading: () { model.loadMoreImages(); },
+            header: MaterialClassicHeader(),
+            footer: createLoadingFooter(),
+            child: StaggeredGridView.countBuilder(
+              itemCount: images.length,
+              crossAxisCount: columns,
+              padding: EdgeInsets.all(spacing),
+              mainAxisSpacing: spacing,
+              crossAxisSpacing: spacing,
+              itemBuilder: (context, index) => createItemView(context, images[index]),
+              staggeredTileBuilder: (index) => createTile(context, images[index]),
+            )
+          );
+        }
       )
     );
   }
@@ -56,7 +109,9 @@ class GalleryView extends StatelessWidget {
         if (mode == LoadStatus.failed) {
           return Center(
             child: Button(
-              onPressed: onLoadMore,
+              onPressed: () {
+                model.loadMoreImages();
+              },
               text: 'Обновить'
             )
           );
@@ -71,12 +126,15 @@ class GalleryView extends StatelessWidget {
     );
   }
 
-  Widget createItemView(BuildContext context, int index) {
-    final image = images[index];
-
+  Widget createItemView(BuildContext context, GiphyImageInfo image) {
     return GridTile(
       child: GestureDetector(
-        onTap: () => onImageClicked(image),
+        onTap: () {
+          Navigator.push(
+            context, 
+            CupertinoPageRoute(builder: (_) => SingleImagePage(image: image))
+          );
+        },
         child: ImageView(
           placeholderColor: 0xffeeeeee,
           url: image.images.w480still.url,
@@ -85,9 +143,7 @@ class GalleryView extends StatelessWidget {
     );
   }
 
-  StaggeredTile createTile(BuildContext context, int index) {
-    final image = images[index];
-
+  StaggeredTile createTile(BuildContext context, GiphyImageInfo image) {
     final parentWidth = MediaQuery.of(context).size.width;
     final imageWidth = (parentWidth - spacing * 3) / 2;
     final aspectRatio = image.images.w480still.height / image.images.w480still.width;
