@@ -3,7 +3,7 @@ import 'package:example/api/api.dart';
 import 'package:example/api/model.dart';
 import 'package:flutter/material.dart';
 
-class GalleryModel {
+class GalleryViewModel {
   static const int pageSize = 20;
   final GiphyApi api;
 
@@ -12,7 +12,7 @@ class GalleryModel {
   final ValueNotifier<OperationStatus> refreshStatus = ValueNotifier(OperationStatus.IDLE);
   final ValueNotifier<OperationStatus> loadMoreStatus = ValueNotifier(OperationStatus.IDLE);
 
-  GalleryModel({@required this.api});
+  GalleryViewModel({@required this.api});
 
   loadImages() async {
     if (loadStatus.value == OperationStatus.LOADING) return;

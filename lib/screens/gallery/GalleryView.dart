@@ -1,6 +1,6 @@
 import 'package:example/OperationStatus.dart';
 import 'package:example/api/model.dart';
-import 'package:example/screens/gallery/GalleryModel.dart';
+import 'package:example/screens/gallery/GalleryViewModel.dart';
 import 'package:example/screens/single/SingleImagePage.dart';
 import 'package:example/views/Button.dart';
 import 'package:example/views/EmptyView.dart';
@@ -23,13 +23,13 @@ class _GalleryViewState extends State<GalleryView> {
   static const int columns = 2;
 
   final refreshController = RefreshController();
-  GalleryModel model;
+  GalleryViewModel model;
 
   @override
   void initState() {
     super.initState();
 
-    model = Provider.of<GalleryModel>(context, listen: false);
+    model = Provider.of<GalleryViewModel>(context, listen: false);
     model.refreshStatus.addListener(onRefreshStatusChanged);
     model.loadMoreStatus.addListener(onLoadMoreStatusChanged);
   }

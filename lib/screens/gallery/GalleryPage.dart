@@ -1,6 +1,6 @@
 import 'package:example/OperationStatus.dart';
 import 'package:example/api/api.dart';
-import 'package:example/screens/gallery/GalleryModel.dart';
+import 'package:example/screens/gallery/GalleryViewModel.dart';
 import 'package:example/screens/gallery/GalleryView.dart';
 import 'package:example/views/CenteredProgress.dart';
 import 'package:example/views/EmptyView.dart';
@@ -15,7 +15,7 @@ class GalleryPage extends StatefulWidget {
 }
 
 class _GalleryPage extends State<GalleryPage> {
-  GalleryModel model;
+  GalleryViewModel model;
 
   @override
   void initState() {
@@ -23,7 +23,7 @@ class _GalleryPage extends State<GalleryPage> {
 
     final api = Provider.of<GiphyApi>(context, listen: false);
 
-    model = GalleryModel(api: api);
+    model = GalleryViewModel(api: api);
     model.loadImages();
   }
 
@@ -33,7 +33,7 @@ class _GalleryPage extends State<GalleryPage> {
       appBar: AppBar(
         title: Text('Giphy Application')
       ),
-      body: Provider<GalleryModel>.value(
+      body: Provider<GalleryViewModel>.value(
         value: model,
         child: ValueListenableBuilder<OperationStatus>(
           valueListenable: model.loadStatus,
