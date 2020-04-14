@@ -1,7 +1,7 @@
 ## Flutter Example
 
 This is an example project with following features:
-- MVVM pattern by Provider + ValueNotifier
+- MVVM + RxDart
 - REST API to load images
 - Gallery and Single photo screens
 - Pagination, Error handling

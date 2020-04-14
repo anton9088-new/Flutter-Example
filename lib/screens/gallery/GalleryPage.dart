@@ -28,6 +28,12 @@ class _GalleryPage extends State<GalleryPage> {
   }
 
   @override
+  void dispose() {
+    model.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -35,10 +41,11 @@ class _GalleryPage extends State<GalleryPage> {
       ),
       body: Provider<GalleryViewModel>.value(
         value: model,
-        child: ValueListenableBuilder<OperationStatus>(
-          valueListenable: model.loadStatus,
-          builder: (_, loadStatus, __) {
-            switch(loadStatus) {
+        child: StreamBuilder<OperationStatus>(
+          initialData: OperationStatus.IDLE,
+          stream: model.loadStatus,
+          builder: (_, snapshot) {
+            switch(snapshot.data) {
               case OperationStatus.LOADING:
                 return CenteredProgress();
               case OperationStatus.COMPLETE:

@@ -12,6 +12,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:rxdart/rxdart.dart';
 
 class GalleryView extends StatefulWidget {
   @override
@@ -23,6 +24,8 @@ class _GalleryViewState extends State<GalleryView> {
   static const int columns = 2;
 
   final refreshController = RefreshController();
+  final subscriptions = CompositeSubscription();
+
   GalleryViewModel model;
 
   @override
@@ -30,20 +33,20 @@ class _GalleryViewState extends State<GalleryView> {
     super.initState();
 
     model = Provider.of<GalleryViewModel>(context, listen: false);
-    model.refreshStatus.addListener(onRefreshStatusChanged);
-    model.loadMoreStatus.addListener(onLoadMoreStatusChanged);
+    
+    subscriptions
+      ..add(model.refreshStatus.listen(onRefreshStatusChanged))
+      ..add(model.loadMoreStatus.listen(onLoadMoreStatusChanged));
   }
 
   @override
   void dispose() {
-    model.refreshStatus.removeListener(onRefreshStatusChanged);
-    model.loadMoreStatus.removeListener(onLoadMoreStatusChanged);
-
+    subscriptions.dispose();
     super.dispose();
   }
 
-  void onRefreshStatusChanged() {
-    switch(model.refreshStatus.value) {
+  void onRefreshStatusChanged(OperationStatus refreshStatus) {
+    switch(refreshStatus) {
       case OperationStatus.LOADING:
         refreshController.headerMode.value = RefreshStatus.refreshing;
         break;
@@ -58,8 +61,8 @@ class _GalleryViewState extends State<GalleryView> {
     }
   }
 
-  void onLoadMoreStatusChanged() {
-    switch(model.loadMoreStatus.value) {
+  void onLoadMoreStatusChanged(OperationStatus loadMoreStatus) {
+    switch(loadMoreStatus) {
       case OperationStatus.LOADING:
         refreshController.footerMode.value = LoadStatus.loading;
         break;
@@ -77,9 +80,11 @@ class _GalleryViewState extends State<GalleryView> {
   @override
   Widget build(BuildContext context) {
     return Scrollbar(
-      child: ValueListenableBuilder<List<GiphyImageInfo>>(
-        valueListenable: model.images,
-        builder: (_, images, __) {
+      child: StreamBuilder<List<GiphyImageInfo>>(
+        initialData: [],
+        stream: model.images,
+        builder: (_, snapshot) {
+          var images = snapshot.data;
           return SmartRefresher(
             enablePullDown: images.isNotEmpty,
             enablePullUp: images.isNotEmpty,
